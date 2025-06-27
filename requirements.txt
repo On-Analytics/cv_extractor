@@ -1,0 +1,28 @@
+# Extraction_Agent - Requirements
+# Install with: pip install -r requirements.txt
+
+# --- Core AI & Extraction ---
+openai>=1.0.0           # OpenAI API client
+langchain-core>=0.1.0   # Core LangChain abstractions
+langchain-openai>=0.1.0 # LangChain OpenAI integration
+langchain-community>=0.0.10 # Document loaders, etc.
+python-dotenv>=1.0.0    # For .env API key loading
+
+# --- Document Loaders ---
+pypdf>=3.17.0           # PDF parsing
+python-docx>=0.8.11     # DOCX parsing
+unstructured>=0.10.0    # Robust doc parsing (all formats)
+
+# --- Utilities ---
+tqdm>=4.65.0             # Progress bars
+python-magic-bin; sys_platform == 'win32'  # File type detection (Windows)
+python-magic; sys_platform != 'win32'      # File type detection (Other)
+
+# --- Optional, for advanced features ---
+numpy>=1.20.0            # Needed by some loaders
+# If you use HuggingFace/embeddings, uncomment:
+# sentence-transformers>=2.2.2
+# torch>=2.0.0
+# transformers>=4.30.0
+# huggingface-hub>=0.16.0
+# langchain-huggingface>=0.0.1
