@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 from collections import defaultdict
-from preprocessing.schemas.cv_schema import DocumentSchema, Experience
+from preprocess.schemas.cv_schema import DocumentSchema, Experience
 
 def postprocess_extracted_data(data: Dict[str, Any]) -> Dict[str, Any]:
     """

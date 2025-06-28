@@ -5,9 +5,9 @@ Run this file from the project root:
 """
 import os
 from pathlib import Path
-from pre.schemas.cv_schema import DocumentSchema
-from pre.run_pipeline import run_extraction_pipeline
-from pre.postprocessing import run_postprocessing
+from preprocess.schemas.cv_schema import DocumentSchema
+from preprocess.run_pipeline import run_extraction_pipeline
+from preprocess.postprocessing import run_postprocessing
 
 # Project root, input, and output directories
 project_root = Path(__file__).parent.resolve()

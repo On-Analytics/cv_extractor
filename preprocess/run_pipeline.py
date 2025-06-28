@@ -1,10 +1,10 @@
 from pathlib import Path
-from preprocessing.schemas.cv_schema import DocumentSchema
+from preprocess.schemas.cv_schema import DocumentSchema
 from typing import Type
 import os
 import json
-from preprocessing.postprocessing import postprocess_extracted_data
-from preprocessing.extractor import DocumentExtractor
+from preprocess.postprocessing import postprocess_extracted_data
+from preprocess.extractor import DocumentExtractor
 
 class Processor:
     """Handles loading and processing of CV documents."""
