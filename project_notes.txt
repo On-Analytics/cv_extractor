@@ -1,1 +1,0 @@
-1. script to prompt for the OpenAI API key (for security), or should it read it from an environment variable.
