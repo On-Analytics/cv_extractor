@@ -110,7 +110,7 @@ def main():
     st.title("📄 Document Information Extractor")
     st.markdown(
         """
-        Upload documents (CVs, invoices, etc.) and extract structured information using different schemas.
+        Upload documents (Resumes, invoices, etc.).
         """
     )
     
@@ -119,31 +119,32 @@ def main():
         st.header("Configuration")
         
         # Load available schemas
-        schemas = load_available_schemas()
-        selected_schema = st.selectbox(
-            "Select Schema",
-            options=schemas,
-            format_func=lambda x: x.replace("_", " ").title(),
-            help="Choose the schema that matches your document type"
+        available_schemas = load_available_schemas()
+        SCHEMA_DISPLAY_NAMES = {
+            "invoice_schema": "Invoice",
+            "cv_schema": "Resume",
+            # Add more as needed
+        }
+        # Build display names list
+        display_schema_names = [SCHEMA_DISPLAY_NAMES.get(s, s) for s in available_schemas]
+        selected_display_schema = st.selectbox(
+            "Select extraction schema",
+            display_schema_names,
+            index=0
         )
+        # Map back to internal schema name for processing
+        display_to_internal = {v: k for k, v in SCHEMA_DISPLAY_NAMES.items()}
+        selected_schema = display_to_internal.get(selected_display_schema, selected_display_schema)
         
         # Model selection
         model_options = ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo"]
         selected_model = st.selectbox(
             "Select Model",
-            options=model_options,
+            model_options,
             index=0,
             help="Choose the OpenAI model for extraction"
         )
-        
-        # Output format
-        output_format = st.radio(
-            "Output Format",
-            options=["JSON", "Table"],
-            index=0,
-            help="Choose how to display the extracted data"
-        )
-        
+
         # API Key input
         api_key = st.text_input(
             "OpenAI API Key",
@@ -232,7 +233,6 @@ def main():
                             if results:
                                 # Store results in session state for access across reruns
                                 st.session_state.extraction_results = results
-                                st.session_state.output_format = output_format
 
                                 if len(results) < len(uploaded_files):
                                     st.warning(f"{len(uploaded_files) - len(results)} document(s) failed to process. Check the error messages above.")
@@ -253,7 +253,7 @@ def main():
         # Display results if available in session state
         if 'extraction_results' in st.session_state and st.session_state.extraction_results:
             results = st.session_state.extraction_results
-            output_format = st.session_state.output_format
+            output_format = 'JSON'
 
             # Show only the first document's JSON output
             st.subheader("First Document Extracted (JSON)")
@@ -261,8 +261,8 @@ def main():
             
             # Export options
             st.subheader("Export Results")
-            col_json, col_csv = st.columns(2)
-            
+            col_json, col_csv, col_excel = st.columns(3)
+
             with col_json:
                 json_data = json.dumps(results, indent=2)
                 st.download_button(
@@ -271,23 +271,27 @@ def main():
                     file_name="extracted_data.json",
                     mime="application/json"
                 )
-            
             with col_csv:
-                # Convert to DataFrame for CSV export
-                if results:
-                    try:
-                        df = convert_to_dataframe(results)
-                        csv_data = df.to_csv(index=False)
-                        st.download_button(
-                            label="Download CSV",
-                            data=csv_data,
-                            file_name="extracted_data.csv",
-                            mime="text/csv"
-                        )
-                    except Exception as e:
-                        st.error(f"Could not convert to CSV: {str(e)}")
-        else:
-            st.info("Upload and process documents to see results here.")
+                import pandas as pd
+                df = pd.DataFrame(results)
+                csv_data = df.to_csv(index=False)
+                st.download_button(
+                    label="Download CSV",
+                    data=csv_data,
+                    file_name="extracted_data.csv",
+                    mime="text/csv"
+                )
+            with col_excel:
+                import io
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    df.to_excel(writer, index=False, sheet_name='ExtractedData')
+                st.download_button(
+                    label="Download Excel",
+                    data=output.getvalue(),
+                    file_name="extracted_data.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
 
 if __name__ == "__main__":
     main()
