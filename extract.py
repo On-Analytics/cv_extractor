@@ -1,46 +1,135 @@
-"""
-Main entry point for running the full extraction and postprocessing pipeline.
-Run this file from the project root:
-    python extract.py
-"""
 import os
+import json
 from pathlib import Path
-from preprocess.schemas.cv_schema import DocumentSchema
+from typing import Union, Dict, Any, Optional
+import importlib
+import sys
+from typing import Type
+
+SCHEMA_DIR = Path(__file__).parent / 'preprocess' / 'schemas'
+
+
+def load_schema(schema_name: str) -> Type:
+    """
+    Dynamically import a schema module and return its schema class via get_schema().
+    """
+    module_path = f"preprocess.schemas.{schema_name}"
+    try:
+        module = importlib.import_module(module_path)
+        if hasattr(module, 'get_schema'):
+            return module.get_schema()
+        else:
+            raise ImportError(f"Schema module '{module_path}' does not have a get_schema() function.")
+    except Exception as e:
+        raise ImportError(f"Could not import schema '{schema_name}': {e}")
+
 from preprocess.run_pipeline import run_extraction_pipeline
-from preprocess.postprocessing import run_postprocessing
 
-# Project root, input, and output directories
-project_root = Path(__file__).parent.resolve()
-input_dir = project_root / "documents_folder"
-outputs_dir = project_root / "outputs"
-os.makedirs(outputs_dir, exist_ok=True)
-output_file = outputs_dir / "extraction_results.json"
-postprocessed_file = outputs_dir / "pos_extraction_results.json"
 
-# OpenAI API key and extraction template
-openai_api_key = os.getenv("OPENAI_API_KEY") or "YOUR_API_KEY"
-extraction_template = (
-    """Extract all relevant entities and information mentioned as a JSON object that follows the schema class structure.\n\n
-- For each professional experience, extract start_date and end_date if present (e.g., 'Aug 2005', 'Aug 2007', 'Present').\n
-- If a property is not present or cannot be determined, leave it as null or do not include it in the output.\n
-- Do NOT use generic placeholders like 'N/A', 'Not specified', 'City', 'Company Name', etc.\n\n
-Passage:\n{input}"""
-)
-model = "gpt-4o-mini"
+# Default configuration
+DEFAULT_CONFIG = {
+    "model": "gpt-4o-mini",
+    "outputs_subdir": "outputs"
+}
+
+def setup_directories(outputs_dir: Union[str, Path]) -> Path:
+    """Ensure output directories exist."""
+    outputs_dir = Path(outputs_dir)
+    os.makedirs(outputs_dir, exist_ok=True)
+    return outputs_dir
+
+async def extract_from_file_async(input_path: Union[str, Path], schema_name: str = 'cv_schema', output_dir: Optional[Path] = None, **kwargs) -> Dict[str, Any]:
+    """
+    Async version of extract_from_file.
+    Extract information from a file or directory of files.
+    Returns a dict containing extraction results, always including file_name for single files.
+    """
+    from preprocess.run_pipeline import run_extraction_pipeline, run_sync_or_async
+    
+    config = DEFAULT_CONFIG.copy()
+    config.update(kwargs)
+    input_path = Path(input_path)
+    
+    # Use the provided output_dir if available, otherwise use the default
+    if output_dir is None:
+        base_dir = input_path if input_path.is_dir() else input_path.parent
+        output_dir = setup_directories(base_dir / "outputs")
+    else:
+        output_dir = setup_directories(output_dir)
+        
+    output_file = (
+        output_dir / f"{input_path.stem}.json"
+        if input_path.is_file()
+        else output_dir / "extracted_data.json"
+    )
+    if output_file.exists():
+        output_file.unlink()
+
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        raise ValueError("OpenAI API key is required (set in .env or environment variable)")
+        
+    try:
+        schema_class = load_schema(schema_name)
+        # Dynamically load the prompt from the schema module
+        module_path = f"preprocess.schemas.{schema_name}"
+        module = importlib.import_module(module_path)
+        if hasattr(module, 'get_prompt'):
+            extraction_prompt = module.get_prompt()
+        else:
+            raise ImportError(f"Schema module '{module_path}' does not have a get_prompt() function.")
+            
+        # Run the extraction pipeline
+        result = await run_extraction_pipeline(
+            schema=schema_class,
+            input_dir=str(input_path),
+            output_file=str(output_file),
+            openai_api_key=openai_api_key,
+            extraction_template=extraction_prompt,
+            model=config["model"]
+        )
+        
+        # Handle the result
+        if input_path.is_file() and isinstance(result, dict):
+            result.setdefault("file_name", input_path.name)
+            return result
+        return result
+        
+    except Exception as e:
+        error_msg = str(e)
+        if input_path.is_file():
+            return {"file_name": input_path.name, "error": error_msg}
+        return {"error": f"Failed to process {input_path.name}: {error_msg}"}
+
+def extract_from_file(input_path: Union[str, Path], schema_name: str = 'cv_schema', output_dir: Optional[Path] = None, **kwargs) -> Dict[str, Any]:
+    """
+    Sync wrapper for extract_from_file_async.
+    Extract information from a file or directory of files.
+    Returns a dict containing extraction results, always including file_name for single files.
+    """
+    from preprocess.run_pipeline import run_sync_or_async
+    
+    # Create a coroutine for the async function
+    coro = extract_from_file_async(input_path, schema_name, output_dir, **kwargs)
+    
+    # Run it using our helper function
+    return run_sync_or_async(coro)
 
 def main():
-    print("[Extract] Running extraction pipeline...")
-    run_extraction_pipeline(
-        schema=DocumentSchema,
-        input_dir=input_dir,
-        output_file=str(output_file),
-        openai_api_key=openai_api_key,
-        extraction_template=extraction_template,
-        model=model
-    )
-    print("[Extract] Running postprocessing...")
-    run_postprocessing(str(output_file), str(postprocessed_file))
-    print(f"[Extract] All done! Results in {postprocessed_file}")
+    """Command-line interface for the extraction script."""
+    import argparse
+    parser = argparse.ArgumentParser(description='Extract information from CVs')
+    parser.add_argument('--input', '-i', required=True, help='Input file or directory containing CVs')
+    parser.add_argument('--schema', default="cv_schema", help="Schema to use (e.g., cv_schema or invoice_schema)")
+    args = parser.parse_args()
+    if not Path(args.input).exists():
+        return 1
+    try:
+        extract_from_file(input_path=args.input, schema_name=args.schema)
+        return 0
+    except Exception as e:
+        return 1
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main())

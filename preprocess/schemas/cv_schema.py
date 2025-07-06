@@ -1,5 +1,5 @@
 from typing import Dict, Any, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 import re
 from datetime import datetime
 
@@ -27,13 +27,13 @@ class Education(BaseModel):
 
 class Language(BaseModel):
     """Language proficiency information."""
-    language: str = Field(..., description="Name of the language")
+    language: Optional[str] = Field(None, description="Name of the language")
     proficiency: Optional[str] = Field(None, description="Proficiency level (e.g., Native, Fluent, Intermediate, Basic)")
 
 class Profile(BaseModel):
     """Social media or professional network profile information."""
-    network: str = Field(..., description="Name of the social network or platform (e.g., LinkedIn, GitHub)")
-    url: str = Field(..., description="URL to the candidate's profile")
+    network: Optional[str] = Field(None, description="Name of the social network or platform (e.g., LinkedIn, GitHub)")
+    url: Optional[str] = Field(None, description="URL to the candidate's profile")
 
 class Experience(BaseModel):
     """Professional experience information.
@@ -42,9 +42,10 @@ class Experience(BaseModel):
     """
     position: Optional[str] = Field(None, description="Job title/position")
     company: Optional[str] = Field(None, description="Name of the company")
-    start_date: Optional[str] = Field(None, description="Start date of the position (e.g., 'Aug 2005')")
-    end_date: Optional[str] = Field(None, description="End date of the position (e.g., 'Aug 2007' or 'Present/Current')")
-    description: Optional[str] = Field(None, description="Additional details about the role or responsibilities")
+    start_date: Optional[str] = Field(None, description="Start date of the position (e.g., '2005')")
+    end_date: Optional[str] = Field(None, description="End date of the position (e.g., '2007' or 'Present/Current')")
+    description: str = Field(..., description="Additional details about the role or responsibilities")
+
 
 class DocumentSchema(BaseModel):
     """Structured schema for document data extraction."""
@@ -53,32 +54,79 @@ class DocumentSchema(BaseModel):
         description=("High level summary of the document with relevant roles and experience. Include all relevant information to provide full picture."
         "Do no use any pronouns"),
     )
-    name: Optional[str] = Field(None, description="Full name of the candidate")
+    name: str = Field(..., description="Full name of the candidate")
     location: Optional[Location] = Field(None, description="Geographic location details")
     email: Optional[str] = Field(None, description="Primary email address for contact")
     phone: Optional[str] = Field(None, description="Contact phone number with country code")
-    profiles: List[Profile] = Field(
-        default_factory=list,
-        description="List of social media and professional network profiles"
-    )
-    professional_experience: List[Experience] = Field(
-        default_factory=list,
-        description="List of professional experience entries"
-    )
-    education: List[Education] = Field(
-        default_factory=list,
-        description="List of educational qualifications in reverse chronological order"
-    )
-    skills: List[str] = Field(
-        default_factory=list,
-        description="List of professional skills and competencies"
-    )
-    languages: List[Language] = Field(
-        default_factory=list,
-        description="List of languages spoken and proficiency levels"
-    )
-    certifications: List[str] = Field(
-        default_factory=list,
-        description="List of professional certifications and qualifications"
+    profiles: Optional[List[Profile]] = Field(default_factory=list, description="Social/professional profiles")
+    professional_experience: Optional[List[Experience]] = Field(default_factory=list,description="List of professional experience entries")
+    education: Optional[List[Education]] = Field(default_factory=list,description="List of educational qualifications in reverse chronological order")
+    skills: Optional[List[str]] = Field(default_factory=list, description="List of skills")
+    languages: Optional[List[Language]] = Field(default_factory=list, description="Languages spoken")
+    certifications: Optional[List[str]] = Field(default_factory=list, description="Certifications obtained")
+
+    @field_validator('profiles', 'professional_experience', 'education', 'skills', 'languages', 'certifications', mode='before')
+    def empty_list_if_none(cls, v):
+        """If a list field is None, convert it to an empty list before validation."""
+        if v is None:
+            return []
+        return v
+
+def get_schema():
+    return DocumentSchema
+
+def get_prompt():
+    return (
+        """
+
+Extract ONLY the following fields as a JSON object with this structure and follow this instructions: 
+
+- For each professional experience extract the start_date and end_date as a year if present (e.g., '2005', '2007', 'Present').
+- DO NOT extract or include any other fields.
+- Do NOT guess or infer values for fields not listed or values not present.
+- Do NOT use placeholders like 'N/A', 'Not specified', 'City', 'Company Name', etc.
+- Output must be a valid JSON object with ONLY the fields above (even if all except summary are null or empty arrays).
+
+{{{{
+  "summary": str,
+  "name": str,
+  "location": {{{{
+    "city": str or null,
+    "country": str or null,
+    "region": str or null
+  }}}},
+  "email": str or null,
+  "phone": str or null,
+  "profiles": [str],
+  "professional_experience": [
+    {{{{
+      "position": str or null,
+      "company": str or null,
+      "start_date": str or null,
+      "end_date": str or null,
+      "description": str
+    }}}}
+  ],
+  "education": [
+    {{{{
+      "degree": str or null,
+      "institution": str or null,
+      "year": str or null,
+      "field": str or null
+    }}}}
+  ],
+  "skills": [str],
+  "languages": [
+    {{{{
+      "language": str or null,
+      "proficiency": str or null
+    }}}}
+  ],
+  "certifications": [str]
+}}}}
+
+Passage:
+{{input}}
+"""
     )
 

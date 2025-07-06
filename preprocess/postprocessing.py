@@ -77,10 +77,6 @@ def save_postprocessed_results(merged_result, output_file, raw_output_file=None)
     import json
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(merged_result, f, indent=2, ensure_ascii=False)
-    if raw_output_file:
-        print(f"[Postprocess] Postprocessing complete. Raw results in {raw_output_file}, merged postprocessed result in {output_file}")
-    else:
-        print(f"[Postprocess] Postprocessing complete. Merged postprocessed result in {output_file}")
 
 
 def run_postprocessing(raw_output_file, postprocessed_file):
@@ -98,7 +94,6 @@ def run_postprocessing(raw_output_file, postprocessed_file):
             try:
                 results = json.load(f)
             except json.JSONDecodeError:
-                print(f"[Postprocess][Warn] {raw_output_file} is not valid JSON. Treating as empty.")
                 results = []
     processed_results = [postprocess_extracted_data(r) for r in results]
     merged_result = merge_documents(processed_results)

@@ -17,6 +17,11 @@ unstructured>=0.10.0    # Robust doc parsing (all formats)
 tqdm>=4.65.0             # Progress bars
 python-magic-bin; sys_platform == 'win32'  # File type detection (Windows)
 python-magic; sys_platform != 'win32'      # File type detection (Other)
+openpyxl>=3.1.0          # Excel file support for pandas
+
+# --- Web App ---
+streamlit>=1.28.0        # Web interface
+pandas>=2.0.0            # Data manipulation for display
 
 # --- Optional, for advanced features ---
 numpy>=1.20.0            # Needed by some loaders
