@@ -123,6 +123,8 @@ def main():
         SCHEMA_DISPLAY_NAMES = {
             "invoice_schema": "Invoice",
             "cv_schema": "Resume",
+            "bank_statement_schema": "Bank Statement",
+            "utility_bill_schema": "Utility Bill",
             # Add more as needed
         }
         # Build display names list

@@ -79,13 +79,15 @@ def get_prompt():
     return (
         """
 
-Extract ONLY the following fields as a JSON object with this structure and follow this instructions: 
+Follow these instructions:
 
 - For each professional experience extract the start_date and end_date as a year if present (e.g., '2005', '2007', 'Present').
 - DO NOT extract or include any other fields.
 - Do NOT guess or infer values for fields not listed or values not present.
 - Do NOT use placeholders like 'N/A', 'Not specified', 'City', 'Company Name', etc.
 - Output must be a valid JSON object with ONLY the fields above (even if all except summary are null or empty arrays).
+
+Extract ONLY the following fields as a JSON object with this structure
 
 {{{{
   "summary": str,
