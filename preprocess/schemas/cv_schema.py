@@ -22,7 +22,7 @@ class Education(BaseModel):
     """Educational background information."""
     degree: Optional[str] = Field(None, description="Academic degree earned (e.g., Bachelor's, Master's, PhD)")
     institution: str = Field(..., description="Name of the educational institution")
-    year: Optional[str] = Field(None, description="Year of graduation or attendance period")
+    year: Optional[str] = Field(None, description="Year of graduation or attendance period formatted as 'YYYY', if present")
     field: Optional[str] = Field(None, description="Field of study or major")
 
 class Language(BaseModel):
@@ -42,8 +42,8 @@ class Experience(BaseModel):
     """
     position: Optional[str] = Field(None, description="Job title/position")
     company: Optional[str] = Field(None, description="Name of the company")
-    start_date: Optional[str] = Field(None, description="Start date of the position (e.g., '2005')")
-    end_date: Optional[str] = Field(None, description="End date of the position (e.g., '2007' or 'Present/Current')")
+    start_date: Optional[str] = Field(None, description="Start date of the position formatted as 'YYYY-MM-DD' or 'YYYY', if present")
+    end_date: Optional[str] = Field(None, description="End date of the position formatted as 'YYYY-MM-DD', 'YYYY' or 'Present/Current', if present")
     description: str = Field(..., description="Additional details about the role or responsibilities")
 
 
@@ -71,7 +71,7 @@ class DocumentSchema(BaseModel):
         if v is None:
             return []
         return v
-
+        
 def get_schema():
     return DocumentSchema
 
@@ -90,45 +90,7 @@ Follow these instructions:
 Extract ONLY the following fields as a JSON object with this structure
 
 {{{{
-  "summary": str,
-  "name": str,
-  "location": {{{{
-    "city": str or null,
-    "country": str or null,
-    "region": str or null
-  }}}},
-  "email": str or null,
-  "phone": str or null,
-  "profiles": [str],
-  "professional_experience": [
-    {{{{
-      "position": str or null,
-      "company": str or null,
-      "start_date": str or null,
-      "end_date": str or null,
-      "description": str
-    }}}}
-  ],
-  "education": [
-    {{{{
-      "degree": str or null,
-      "institution": str or null,
-      "year": str or null,
-      "field": str or null
-    }}}}
-  ],
-  "skills": [str],
-  "languages": [
-    {{{{
-      "language": str or null,
-      "proficiency": str or null
-    }}}}
-  ],
-  "certifications": [str]
-}}}}
-
 Passage:
 {{input}}
 """
     )
-

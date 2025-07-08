@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 
 def get_schema():
@@ -11,8 +11,8 @@ class UsageDetail(BaseModel):
     cost: Optional[float] = Field(None, description="Cost for this usage")
 
 class BillingPeriod(BaseModel):
-    start_date: Optional[str] = Field(None, description="Billing period start date")
-    end_date: Optional[str] = Field(None, description="Billing period end date")
+    start_date: Optional[str] = Field(None, description="Billing period start date formatted as 'YYYY-MM-DD'")
+    end_date: Optional[str] = Field(None, description="Billing period end date formatted as 'YYYY-MM-DD'")
 
 class UtilityBillSchema(BaseModel):
     customer_name: Optional[str] = Field(None, description="Customer's name")
@@ -20,10 +20,19 @@ class UtilityBillSchema(BaseModel):
     address: Optional[str] = Field(None, description="Service address")
     provider_name: Optional[str] = Field(None, description="Utility provider name")
     billing_period: Optional[BillingPeriod] = None
-    issue_date: Optional[str] = Field(None, description="Date bill was issued")
-    due_date: Optional[str] = Field(None, description="Due date for payment")
+    issue_date: Optional[str] = Field(None, description="Date bill was issued formatted as 'YYYY-MM-DD'")
+    due_date: Optional[str] = Field(None, description="Due date for payment formatted as 'YYYY-MM-DD'")
     total_amount_due: Optional[float] = Field(None, description="Total amount due")
     usage_details: Optional[List[UsageDetail]] = Field(default_factory=list, description="Usage details")
+
+    @field_validator('usage_details', mode='before')
+    def empty_list_if_none(cls, v):
+        """If 'usage_details' is None, convert it to an empty list before validation."""
+        if v is None:
+            return []
+        return v
+
+
 
 def get_prompt():
     return (
@@ -33,27 +42,7 @@ Follow these instructions:
 - DO NOT extract or include any other fields.
 - Do NOT guess or infer values.
 - Do NOT use placeholders like 'N/A', 'Not specified', etc.
-- Output must be a valid JSON object with ONLY the fields below (even if all are null or empty arrays).
-
-Extract ONLY the following fields as a JSON object with this structure:
-{
-  "customer_name": str or null,
-  "account_number": str or null,
-  "address": str or null,
-  "provider_name": str or null,
-  "billing_period": {"start_date": str or null, "end_date": str or null},
-  "issue_date": str or null,
-  "due_date": str or null,
-  "total_amount_due": float or null,
-  "usage_details": [
-    {
-      "type": str or null,
-      "usage_amount": float or null,
-      "unit": str or null,
-      "cost": float or null
-    }
-  ]
-}
+- Output must be a valid JSON object with ONLY the fields above (even if all are null or empty arrays).
 
 Passage:
 {{input}}

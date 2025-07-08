@@ -195,11 +195,9 @@ def main():
         )
         
         if uploaded_files:
-            # Display file information
+            # Show simple file count
             st.subheader("Uploaded Files")
-            for i, file in enumerate(uploaded_files):
-                file_size = len(file.getvalue()) / (1024 * 1024)  # Size in MB
-                st.write(f"**{i+1}.** {file.name} ({file_size:.1f}MB)")
+            st.success(f"✓ {len(uploaded_files)} file{'s' if len(uploaded_files) != 1 else ''} ready for processing")
             
             if st.button("Extract Information", type="primary"):
                 if not os.environ.get("OPENAI_API_KEY"):

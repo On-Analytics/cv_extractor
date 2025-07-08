@@ -2,6 +2,7 @@ from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field, field_validator
 import re
 from datetime import datetime
+from pydantic import field_validator
 
 # Load environment variables from .env in parent directory
 from dotenv import load_dotenv
@@ -19,12 +20,14 @@ class InvoiceItem(BaseModel):
     total: Optional[float] = Field(None, description="Total price for the item or service (quantity * unit_price)")
 
 class DocumentSchema(BaseModel):
-    invoice_number: Optional[str] = Field(None, description="Invoice number")
-    date: Optional[str] = Field(None, description="Invoice date")
+    invoice_number: str = Field(..., description="Invoice number")
+    date: Optional[str] = Field(None, description="Invoice date formatted as 'YYYY-MM-DD'")
     vendor: Optional[str] = Field(None, description="Vendor or seller name")
-    customer: Optional[str] = Field(None, description="Customer or buyer name")
+    customer: str = Field(..., description="Customer, client or buyer name")
     items: List[InvoiceItem] = Field(default_factory=list, description="List of items or services in the invoice")
-    total_amount: Optional[float] = Field(None, description="Total amount for the invoice")
+    subtotal: Optional[float] = Field(None, description="Subtotal amount before tax")
+    tax: Optional[float] = Field(None, description="Tax amount")
+    total_amount: Optional[float] = Field(None, description="Total amount for the invoice (including tax)")
 
     @field_validator('items', mode='before')
     def empty_list_if_none(cls, v):
@@ -45,24 +48,6 @@ Follow these instructions:
 - Do NOT guess or infer values.
 - Do NOT use placeholders like 'N/A', 'Not specified', etc.
 - Output must be a valid JSON object with ONLY the fields above (even if all are null or empty arrays).
-
-
-Extract ONLY the following fields as a JSON object with this structure:
-{{
-  "invoice_number": str or null,
-  "date": str or null,
-  "vendor": str or null,
-  "customer": str or null,
-  "items": [
-    {{
-      "description": str or null,
-      "quantity": int or null,
-      "unit_price": float or null,
-      "total": float or null
-    }}
-  ],
-  "total_amount": float or null
-}}
 
 Passage:
 {input}
