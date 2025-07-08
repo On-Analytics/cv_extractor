@@ -142,9 +142,8 @@ def process_uploaded_file(
                     model=model
                 )
             
-            # Add the original filename to the result
-            if result and isinstance(result, dict):
-                result['source_file'] = uploaded_file.name
+            # We no longer add the original filename to the result
+            # The file_name is now included in the metadata if needed
             return result
                 
         except Exception as extract_error:
@@ -249,7 +248,11 @@ def display_extraction_results(results: List[Dict[str, Any]], output_format: str
     
     # Display each result
     for i, result in enumerate(results):
-        st.subheader(f"Document {i+1}: {result.get('source_file', 'Unknown')}")
+        # Get file_name from metadata if available
+        file_name = "Unknown"
+        if result.get('metadata') and isinstance(result['metadata'], dict):
+            file_name = result['metadata'].get('file_name', 'Unknown')
+        st.subheader(f"Document {i+1}: {file_name}")
         
         if output_format == "JSON":
             # Display as formatted JSON

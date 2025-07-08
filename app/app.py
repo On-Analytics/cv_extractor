@@ -128,7 +128,7 @@ def main():
             # Add more as needed
         }
         # Build display names list
-        display_schema_names = [SCHEMA_DISPLAY_NAMES.get(s, s) for s in available_schemas]
+        display_schema_names = ["Select a schema..."] + [SCHEMA_DISPLAY_NAMES.get(s, s) for s in available_schemas]
         selected_display_schema = st.selectbox(
             "Select extraction schema",
             display_schema_names,
@@ -136,7 +136,7 @@ def main():
         )
         # Map back to internal schema name for processing
         display_to_internal = {v: k for k, v in SCHEMA_DISPLAY_NAMES.items()}
-        selected_schema = display_to_internal.get(selected_display_schema, selected_display_schema)
+        selected_schema = display_to_internal.get(selected_display_schema, None) if selected_display_schema != "Select a schema..." else None
         
         # Model selection
         model_options = ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo"]
@@ -188,11 +188,15 @@ def main():
             - **Ensure good quality**: Clear, readable documents work best
             """)
         
+        file_uploader_disabled = selected_schema is None
         uploaded_files = st.file_uploader(
             "Upload one or more documents",
             type=["pdf", "docx", "doc", "txt"],
-            accept_multiple_files=True
+            accept_multiple_files=True,
+            disabled=file_uploader_disabled
         )
+        if file_uploader_disabled:
+            st.info("Please select a schema before uploading files.")
         
         if uploaded_files:
             # Show simple file count

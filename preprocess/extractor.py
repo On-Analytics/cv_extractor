@@ -34,24 +34,14 @@ class DocumentExtractor:
 
     async def extract_from_document(self, document: Document) -> Dict[str, Any]:
         """Extract structured data from a document using the schema."""
-        source_file = getattr(
-            document, 'source',
-            getattr(document, 'metadata', {}).get('source') or
-            getattr(document, 'metadata', {}).get('file_path', 'unknown')
-        )
         try:
             result = await self.chain.ainvoke({"input": document.page_content})
             if not result:
-                return {"error": "Extraction returned None", "source_file": source_file}
+                return {"error": "Extraction returned None"}
 
             data = result.dict()
-            metadata = getattr(document, 'metadata', {}) or {}
-            from datetime import datetime
-            filtered_metadata = {k: metadata.get(k) for k in ["title", "total_pages", "page"] if k in metadata}
-            filtered_metadata["date_of_extraction"] = datetime.now().strftime("%Y-%m-%d")
-            data['metadata'] = filtered_metadata
             return data
 
         except Exception as e:
-            error_msg = f"Error processing document {source_file}: {str(e)}"
-            return {"error": error_msg, "source_file": source_file}
+            error_msg = f"Error processing document: {str(e)}"
+            return {"error": error_msg}

@@ -54,14 +54,9 @@ def merge_documents(results: List[Dict[str, Any]]) -> Dict[str, Any]:
                 merged[field] = val
                 break
 
-    # For merged output, include only the first 'source' (file name) found and its file name as 'file_name'
-    import os
-    for r in results:
-        src = r.get('source')
-        if src is not None:
-            merged['source'] = src
-            merged['file_name'] = os.path.basename(src)
-            break
+    # Remove source and file_name fields if present
+    merged.pop('source', None)
+    merged.pop('file_name', None)
     # Remove 'page' if present in merged output (top-level)
     merged.pop('page', None)
     # Also remove 'page' from any nested structures if necessary (defensive, but usually not needed)

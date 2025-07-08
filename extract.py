@@ -90,15 +90,10 @@ async def extract_from_file_async(input_path: Union[str, Path], schema_name: str
         )
         
         # Handle the result
-        if input_path.is_file() and isinstance(result, dict):
-            result.setdefault("file_name", input_path.name)
-            return result
         return result
         
     except Exception as e:
         error_msg = str(e)
-        if input_path.is_file():
-            return {"file_name": input_path.name, "error": error_msg}
         return {"error": f"Failed to process {input_path.name}: {error_msg}"}
 
 def extract_from_file(input_path: Union[str, Path], schema_name: str = 'cv_schema', output_dir: Optional[Path] = None, **kwargs) -> Dict[str, Any]:

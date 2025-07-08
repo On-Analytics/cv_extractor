@@ -129,6 +129,5 @@ async def run_extraction_pipeline(
     except Exception as e:
         # Ensure we have a valid return value even in case of error
         error_result = {"error": str(e)}
-        if input_path.is_file():
-            error_result["file_name"] = input_path.name
+
         return error_result
