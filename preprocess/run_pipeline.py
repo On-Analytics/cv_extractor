@@ -19,9 +19,19 @@ class Processor:
 
     def _load_pdf(self, file_path: Path):
         from langchain_community.document_loaders import PyPDFLoader
+        from langchain.schema import Document
         try:
             loader = PyPDFLoader(str(file_path))
-            return loader.load()
+            pages = loader.load()
+            if not pages:
+                return []
+            # Concatenate all page contents into one string
+            full_text = "\n".join(page.page_content for page in pages)
+            # Use metadata from the first page (or file_path)
+            metadata = dict(pages[0].metadata) if pages and hasattr(pages[0], 'metadata') else {}
+            metadata["source"] = str(file_path)
+            # Return a single Document object for the whole file
+            return [Document(page_content=full_text, metadata=metadata)]
         except Exception:
             return []
     def _load_docx(self, file_path: Path):
