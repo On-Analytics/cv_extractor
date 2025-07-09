@@ -39,12 +39,11 @@ def get_prompt():
         """
 Follow these instructions:
 
-- DO NOT extract or include any other fields.
-- Do NOT guess or infer values.
+- Do NOT guess or infer values that are not present in the document.
 - Do NOT use placeholders like 'N/A', 'Not specified', etc.
 - Output must be a valid JSON object with ONLY the fields above (even if all are null or empty arrays).
 
 Passage:
-{{input}}
+{input}
 """
     )

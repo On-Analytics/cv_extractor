@@ -60,7 +60,7 @@ class DocumentSchema(BaseModel):
     phone: Optional[str] = Field(None, description="Contact phone number with country code")
     profiles: Optional[List[Profile]] = Field(default_factory=list, description="Social/professional profiles")
     professional_experience: Optional[List[Experience]] = Field(default_factory=list,description="List of professional experience entries")
-    education: Optional[List[Education]] = Field(default_factory=list,description="List of educational qualifications in reverse chronological order")
+    education: Optional[List[Education]] = Field(default_factory=list,description="List of educational qualifications in reverse chronological order. Sometimes educations comes under the name of formation or studies")
     skills: Optional[List[str]] = Field(default_factory=list, description="List of skills")
     languages: Optional[List[Language]] = Field(default_factory=list, description="Languages spoken")
     certifications: Optional[List[str]] = Field(default_factory=list, description="Certifications obtained")
@@ -78,19 +78,117 @@ def get_schema():
 def get_prompt():
     return (
         """
-
 Follow these instructions:
 
-- For each professional experience extract the start_date and end_date as a year if present (e.g., '2005', '2007', 'Present').
-- DO NOT extract or include any other fields.
-- Do NOT guess or infer values for fields not listed or values not present.
+- List all professional experience, for each professional experience extract the start_date and end_date as a year if present (e.g., '2005', '2007', 'Present').
+- Do NOT guess or infer values that are not present in the document.
 - Do NOT use placeholders like 'N/A', 'Not specified', 'City', 'Company Name', etc.
 - Output must be a valid JSON object with ONLY the fields above (even if all except summary are null or empty arrays).
 
-Extract ONLY the following fields as a JSON object with this structure
 
-{{{{
+**Examples**:
+Example 1:
 Passage:
-{{input}}
+John Doe
+Email: john.doe@email.com
+Phone: +1 555-1234
+Location: New York, USA
+LinkedIn: linkedin.com/in/johndoe
+
+Professional Experience:
+Software Engineer at Acme Corp (2018 - 2021)
+- Developed web applications using Python and Django.
+- Led a team of 4 engineers.
+
+Education:
+BSc Computer Science, MIT, 2017
+
+Skills: Python, Django, Leadership
+Languages: English (Native), Spanish (Fluent)
+
+Output:
+{{
+  "summary": "Software engineer with experience in web application development and team leadership. Skilled in Python and Django.",
+  "name": "John Doe",
+  "location": {{"city": "New York", "country": "USA", "region": null}},
+  "email": "john.doe@email.com",
+  "phone": "+1 555-1234",
+  "profiles": [{{"network": "LinkedIn", "url": "linkedin.com/in/johndoe"}}],
+  "professional_experience": [
+    {{
+      "position": "Software Engineer",
+      "company": "Acme Corp",
+      "start_date": "2018",
+      "end_date": "2021",
+      "description": "Developed web applications using Python and Django. Led a team of 4 engineers."
+    }}
+  ],
+  "education": [
+    {{
+      "degree": "BSc Computer Science",
+      "institution": "MIT",
+      "year": "2017",
+      "field": null
+    }}
+  ],
+  "skills": ["Python", "Django", "Leadership"],
+  "languages": [
+    {{"language": "English", "proficiency": "Native"}},
+    {{"language": "Spanish", "proficiency": "Fluent"}}
+  ],
+  "certifications": []
+}}
+
+Example 2:
+Passage:
+Maria Rossi
+Email: maria.rossi@email.it
+Location: Milan, Italy
+
+Professional Experience:
+Marketing Specialist, Beta S.p.A. (2020 - Present)
+- Managed digital marketing campaigns.
+
+Education:
+Laurea in Economia, Università di Milano, 2019
+
+Skills: SEO, Google Analytics
+Languages: Italian (Native), English (Intermediate)
+
+Output:
+{{
+  "summary": "Marketing specialist with experience in digital campaigns. Skilled in SEO and Google Analytics.",
+  "name": "Maria Rossi",
+  "location": {{"city": "Milan", "country": "Italy", "region": null}},
+  "email": "maria.rossi@email.it",
+  "phone": null,
+  "profiles": [],
+  "professional_experience": [
+    {{
+      "position": "Marketing Specialist",
+      "company": "Beta S.p.A.",
+      "start_date": "2020",
+      "end_date": "Present",
+      "description": "Managed digital marketing campaigns."
+    }}
+  ],
+  "education": [
+    {{
+      "degree": "Laurea in Economia",
+      "institution": "Università di Milano",
+      "year": "2019",
+      "field": null
+    }}
+  ],
+  "skills": ["SEO", "Google Analytics"],
+  "languages": [
+    {{"language": "Italian", "proficiency": "Native"}},
+    {{"language": "English", "proficiency": "Intermediate"}}
+  ],
+  "certifications": []
+}}
+
+Passage:
+{input}
 """
     )

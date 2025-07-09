@@ -181,7 +181,7 @@ def main():
         st.header("Upload Documents")
         
         # Add file upload tips
-        with st.expander("📋 File Upload Tips"):
+        with st.expander("📋 Tips to Consider"):
             st.markdown("""
             - **Supported formats**: PDF, DOCX, DOC, TXT
             - **Maximum file size**: 10MB per file
@@ -218,32 +218,36 @@ def main():
                         st.info("Please check your API key and try again.")
                     else:
                         with st.spinner("Processing documents..."):
+                            from concurrent.futures import ThreadPoolExecutor, as_completed
                             progress_bar = st.progress(0)
                             results = []
-                            for i, uploaded_file in enumerate(uploaded_files):
-                                try:
-                                    result = process_uploaded_file(
-                                        uploaded_file,
-                                        selected_schema,
-                                        selected_model
-                                    )
-                                    if result:
-                                        results.append(result)
-                                except Exception as e:
-                                    st.error(f"Error processing {uploaded_file.name}: {e}")
-                                progress_bar.progress((i + 1) / len(uploaded_files))
+                            errors = []
+                            completed = 0
+                            with ThreadPoolExecutor(max_workers=min(4, len(uploaded_files))) as executor:
+                                future_to_file = {
+                                    executor.submit(process_uploaded_file, uploaded_file, selected_schema, selected_model): uploaded_file
+                                    for uploaded_file in uploaded_files
+                                }
+                                for future in as_completed(future_to_file):
+                                    uploaded_file = future_to_file[future]
+                                    try:
+                                        result = future.result()
+                                        if result:
+                                            results.append(result)
+                                    except Exception as e:
+                                        st.error(f"Error processing {uploaded_file.name}: {e}")
+                                        errors.append(uploaded_file.name)
+                                    completed += 1
+                                    progress_bar.progress(completed / len(uploaded_files))
                             st.success(f"Successfully processed {len(results)} out of {len(uploaded_files)} document(s)")
                             progress_bar.empty()
                             if results:
                                 # Store results in session state for access across reruns
                                 st.session_state.extraction_results = results
-
                                 if len(results) < len(uploaded_files):
                                     st.warning(f"{len(uploaded_files) - len(results)} document(s) failed to process. Check the error messages above.")
                             else:
                                 st.error("Failed to process any documents. Check the error messages above for details.")
-
-                            
                                 # Additional troubleshooting info
                                 st.info("🔧 Troubleshooting suggestions:")
                                 st.info("1. Check if your `extract_from_file` function is working correctly")
@@ -268,7 +272,7 @@ def main():
             col_json, col_csv, col_excel = st.columns(3)
 
             with col_json:
-                json_data = json.dumps(results, indent=2)
+                json_data = json.dumps(results, indent=2, ensure_ascii=False)
                 st.download_button(
                     label="Download JSON",
                     data=json_data,
