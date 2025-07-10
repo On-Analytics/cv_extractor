@@ -22,9 +22,11 @@ openpyxl>=3.1.0          # Excel file support for pandas
 # --- Web App ---
 streamlit>=1.28.0        # Web interface
 pandas>=2.0.0            # Data manipulation for display
+XlsxWriter>=3.0.0        # Excel export engine for pandas
 
 # --- Optional, for advanced features ---
 numpy>=1.20.0            # Needed by some loaders
+pydantic>=2.0.0          # For schema validation and models
 # If you use HuggingFace/embeddings, uncomment:
 # sentence-transformers>=2.2.2
 # torch>=2.0.0

@@ -44,7 +44,38 @@
    OPENAI_API_KEY=your_openai_api_key_here
    ```
 
-## Quickstart
+---
+
+## Web App (Streamlit)
+
+**API Key Security Notice:**
+- When using the web app, you will be asked to enter your OpenAI API key in the sidebar if it is not already set via environment variables.
+- Your API key is used only for making requests to the OpenAI API during your current session. It is never shared, logged, or stored long-term by this app.
+- For your security and privacy, the key is kept in memory only for your session and is cleared when you close or refresh the app.
+- You can safely enter your own API key each time you use the app.
+
+You can use the project via a web interface powered by Streamlit:
+
+### Launch the App
+```bash
+streamlit run app/app.py
+```
+
+- Upload one or more documents (PDF, DOCX, TXT)
+- Select the schema you want to use for extraction (e.g., CV, Invoice)
+- Enter your OpenAI API key if prompted
+- View and download extracted data in JSON, CSV, or Excel format
+
+### Flexible Schema System
+- The app supports multiple extraction schemas (e.g., CV, Invoice, etc.)
+- Schemas are defined as separate Python files in `preprocess/schemas/` (e.g., `cv_schema.py`, `invoice_schema.py`)
+- Each schema file must expose a `get_schema()` function returning a Pydantic model
+- You can select which schema to use from the Streamlit UI
+- To add a new schema, create a new file in `preprocess/schemas/` and implement `get_schema()`
+
+---
+
+## Quickstart (CLI)
 
 ```bash
 python extract.py --input path/to/cv/folder

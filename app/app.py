@@ -1,15 +1,15 @@
+"""
+app.py: Streamlit web application for extracting structured data from uploaded documents using a flexible schema system and LLM.
+"""
 import streamlit as st
 import os
 import sys
 import json
 from pathlib import Path
-import tempfile
-import pandas as pd
 
 # Add parent directory to path to import from extract.py
 sys.path.append(str(Path(__file__).parent.parent))
 
-# Import functions from the functions.py file
 from functions import (
     load_available_schemas,
     process_uploaded_file,
@@ -138,8 +138,8 @@ def main():
         # Map back to internal schema name for processing
         display_to_internal = {v: k for k, v in SCHEMA_DISPLAY_NAMES.items()}
         selected_schema = display_to_internal.get(selected_display_schema, None) if selected_display_schema != "Select a schema..." else None
-        
-        # Model selection
+
+        # Model selection (now below schema selection)
         model_options = ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo"]
         selected_model = st.selectbox(
             "Select Model",
@@ -148,17 +148,19 @@ def main():
             help="Choose the OpenAI model for extraction"
         )
 
-        # API Key input
+        # OpenAI API key input (now below model selection)
         api_key = st.text_input(
-            "OpenAI API Key",
+            "Enter your OpenAI API key",
             type="password",
-            value=os.environ.get("OPENAI_API_KEY", ""),
-            help="Enter your OpenAI API key if not set in environment"
+            value=st.session_state.get("openai_api_key", "")
         )
-        
         if api_key:
-            os.environ["OPENAI_API_KEY"] = api_key
+            st.session_state["openai_api_key"] = api_key
+        else:
+            st.warning("Please enter your OpenAI API key to use the app.")
         
+
+
         # API Connection Test
         st.subheader("API Status")
         if st.button("Test API Connection"):

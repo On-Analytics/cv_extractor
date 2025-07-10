@@ -1,13 +1,22 @@
+"""
+run_pipeline.py: Utilities for running the document extraction pipeline using a flexible schema and LLM.
+"""
 from pathlib import Path
-
 from typing import Type
-import os
 import json
 from preprocess.extractor import DocumentExtractor
 
 class Processor:
-    """Handles loading and processing of CV documents."""
+    """
+    Handles loading and processing of CV documents.
+    """
     def __init__(self, input_dir: Path):
+        """
+        Initialize the Processor.
+
+        Args:
+            input_dir (Path): Directory or file path for input documents.
+        """
         self.input_dir = Path(input_dir)
         self.supported_extensions = {
             '.pdf': self._load_pdf,
@@ -17,6 +26,9 @@ class Processor:
         }
 
     def _load_pdf(self, file_path: Path):
+        """
+        Load a PDF file and return a list of Document objects.
+        """
         from langchain_community.document_loaders import PyPDFLoader
         from langchain.schema import Document
         try:
@@ -24,30 +36,42 @@ class Processor:
             pages = loader.load()
             if not pages:
                 return []
-            # Concatenate all page contents into one string
             full_text = "\n".join(page.page_content for page in pages)
-            # Use metadata from the first page (or file_path)
             metadata = dict(pages[0].metadata) if pages and hasattr(pages[0], 'metadata') else {}
             metadata["source"] = str(file_path)
-            # Return a single Document object for the whole file
             return [Document(page_content=full_text, metadata=metadata)]
         except Exception:
             return []
+
     def _load_docx(self, file_path: Path):
+        """
+        Load a DOCX file and return a list of Document objects.
+        """
         from langchain_community.document_loaders import Docx2txtLoader
         try:
             loader = Docx2txtLoader(str(file_path))
             return loader.load()
         except Exception:
             return []
+
     def _load_text(self, file_path: Path):
+        """
+        Load a TXT file and return a list of Document objects.
+        """
         from langchain_community.document_loaders import TextLoader
         try:
             loader = TextLoader(str(file_path), encoding='utf-8')
             return loader.load()
         except Exception:
             return []
+
     def load_documents(self):
+        """
+        Load documents from the input directory or file.
+
+        Returns:
+            List[Document]: List of loaded Document objects.
+        """
         documents = []
         if self.input_dir.is_file():
             ext = self.input_dir.suffix.lower()
@@ -67,12 +91,13 @@ class Processor:
 import asyncio
 
 def run_sync_or_async(coro):
-    """Helper to run either sync or async functions"""
+    """
+    Helper to run either sync or async functions.
+    """
     if asyncio.iscoroutine(coro):
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():
-                # If we're in a running event loop, create a new one in a thread
                 import concurrent.futures
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     future = executor.submit(
@@ -80,24 +105,35 @@ def run_sync_or_async(coro):
                     )
                     return future.result()
             else:
-                # Run in the current event loop
                 return loop.run_until_complete(coro)
         except RuntimeError:
-            # If there's no event loop, create one
             return asyncio.run(coro)
     return coro
 
+from pydantic import BaseModel
+
 async def run_extraction_pipeline(
-    schema: Type,
+    schema: Type[BaseModel],
     input_dir: Path,
     output_file: str,
     openai_api_key: str,
     extraction_template: str = None,
     model: str = "gpt-4o-mini"
-):
+) -> dict:
     """
     Run the extraction pipeline with optional extraction prompt template and model name.
     Handles both single file and directory input, and manages sync/async extraction.
+
+    Args:
+        schema (Type[BaseModel]): The Pydantic schema/model to use for extraction.
+        input_dir (Path): Directory or file path for input documents.
+        output_file (str): Path to write the extracted output JSON.
+        openai_api_key (str): OpenAI API key for authentication.
+        extraction_template (str, optional): System prompt template for extraction.
+        model (str, optional): OpenAI model name. Default is "gpt-4o-mini".
+
+    Returns:
+        dict: Extraction results or error message.
     """
     input_path = Path(input_dir)
     extractor = DocumentExtractor(
@@ -120,7 +156,6 @@ async def run_extraction_pipeline(
             result = extractor.extract_from_document(documents[0])
             if asyncio.iscoroutine(result):
                 result = await result
-            # Write only a single output file (dict for single file)
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(result, f, indent=2, ensure_ascii=False)
             return result
@@ -131,12 +166,9 @@ async def run_extraction_pipeline(
                 if asyncio.iscoroutine(result):
                     result = await result
                 results.append(result)
-            # Write only a single output file (list for batch)
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(results, f, indent=2, ensure_ascii=False)
             return results
     except Exception as e:
-        # Ensure we have a valid return value even in case of error
         error_result = {"error": str(e)}
-
         return error_result

@@ -1,17 +1,18 @@
+"""
+functions.py: Streamlit utility functions for schema selection, file upload, validation, and result display in the extraction app.
+"""
 import os
 import sys
 import json
 import tempfile
-import importlib
-import pandas as pd
-import streamlit as st
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Union
+import pandas as pd
+import streamlit as st
 
 # Add parent directory to path to import from extract.py
 sys.path.append(str(Path(__file__).parent.parent))
 
-# Import from parent directory
 from extract import extract_from_file, load_schema
 from preprocess.schemas import cv_schema, invoice_schema  # Import available schemas
 
