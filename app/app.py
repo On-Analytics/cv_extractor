@@ -107,7 +107,7 @@ def test_api_connection():
 
 def main():
     # App title and description
-    st.title("📄 Document Information Extractor")
+    st.title("📄 Document Data Extractor")
     st.markdown(
         """
         Upload documents (Resumes, invoices, etc.).
@@ -127,8 +127,9 @@ def main():
             "utility_bill_schema": "Utility Bill",
             # Add more as needed
         }
-        # Build display names list
-        display_schema_names = ["Select a schema..."] + [SCHEMA_DISPLAY_NAMES.get(s, s) for s in available_schemas]
+        # Only show 'cv_schema' and 'invoice_schema' for now
+        allowed_schemas = [s for s in available_schemas if s in ("cv_schema", "invoice_schema")]
+        display_schema_names = ["Select a schema..."] + [SCHEMA_DISPLAY_NAMES.get(s, s) for s in allowed_schemas]
         selected_display_schema = st.selectbox(
             "Select extraction schema",
             display_schema_names,

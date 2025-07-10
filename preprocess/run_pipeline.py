@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Type
 import os
 import json
-from preprocess.postprocessing import postprocess_extracted_data
 from preprocess.extractor import DocumentExtractor
 
 class Processor:
