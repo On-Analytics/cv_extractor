@@ -24,7 +24,8 @@
 
 ## Features
 
-- Extracts key information from CVs including personal details, professional experience, education, skills, certifications, and more
+- Extracts key information from a variety of document types (CVs, invoices, etc.)
+- Flexible schema system: easily add support for new document types by defining a schema
 - Supports multiple document formats (PDF, DOCX, TXT)
 - Uses OpenAI's GPT models for accurate, robust information extraction
 - Outputs structured JSON data following a standardized, extensible schema
@@ -68,10 +69,17 @@ streamlit run app/app.py
 
 ### Flexible Schema System
 - The app supports multiple extraction schemas (e.g., CV, Invoice, etc.)
-- Schemas are defined as separate Python files in `preprocess/schemas/` (e.g., `cv_schema.py`, `invoice_schema.py`)
+- Schemas are defined as separate Python files in `preprocess/schemas/` (e.g., `cv_schema.py`, `invoice_schema.py`, `contract_schema.py`)
 - Each schema file must expose a `get_schema()` function returning a Pydantic model
 - You can select which schema to use from the Streamlit UI
-- To add a new schema, create a new file in `preprocess/schemas/` and implement `get_schema()`
+- To add a new schema (for any document type), create a new file in `preprocess/schemas/` and implement `get_schema()`
+- The extraction logic is schema-agnostic: only the selected schema determines the fields and structure of the output
+
+**Example:**
+- To extract data from invoices, add `invoice_schema.py` with a Pydantic model for invoice fields (e.g., invoice number, total, date, line items)
+- To extract data from contracts, add `contract_schema.py` with the relevant fields
+
+This makes the extractor extensible for any structured document extraction use-case.
 
 ---
 
@@ -95,92 +103,56 @@ The output will be saved in an `outputs/` folder inside your input directory by 
 
 ## Output Schema
 
-The extracted data is output as JSON following this schema (fields may be null if not present in the CV):
+The extracted data is output as JSON following the schema for the selected document type. Each schema is defined in its own file (e.g., `cv_schema.py`, `invoice_schema.py`), and the output fields will match those defined in the selected schema.
+
+### Example: CV Schema
 
 - `name`: Full name
 - `location`: { `city`, `country`, `region` }
 - `email`, `phone`: Contact info
-- `profiles`: List of social/professional profiles (LinkedIn, GitHub, etc.)
-- `experience_years`: Total years of professional experience (float)
-- `professional_experience`: List of professional experience objects:
-    - `position`: Job title/position
-    - `company`: Name of the company
-    - `years`: Years in this position (float, optional)
-- `education`: List of education objects:
-    - `institution`, `degree`, `years`, `field`
-- `skills`: List of skills
-- `certifications`: List of certifications
-- `languages`: List of languages with proficiency
+- ... (see schema file for full list)
 
-#### Example Output
-
+#### Example Output (CV)
 ```json
 {
   "name": "Jane Doe",
   "location": {"city": "London", "country": "UK", "region": "Greater London"},
   "email": "jane.doe@email.com",
-  "phone": "+44 1234 567890",
-  "profiles": [
-    {"network": "LinkedIn", "url": "https://linkedin.com/in/janedoe"}
-  ],
-  "experience_years": 7.5,
-  "professional_experience": [
-    {"position": "Software Engineer", "company": "TechCorp", "years": 2.0},
-    {"position": "Junior Developer", "company": "DevStart", "years": 1.5}
-  ],
-  "education": [
-    {"institution": "University of London", "degree": "BSc Computer Science", "years": "2016-2019", "field": "Computer Science"}
-  ],
-  "skills": ["Python", "Machine Learning"],
-  "certifications": ["AWS Certified Developer"],
-  "languages": [
-    {"language": "English", "proficiency": "Native"},
-    {"language": "Spanish", "proficiency": "Intermediate"}
+  ...
+}
+```
+
+### Example: Invoice Schema
+
+- `invoice_number`: Invoice number
+- `date`: Invoice date
+- `vendor`: Vendor name
+- `customer`: Customer name
+- `total`: Total amount
+- `line_items`: List of line items (description, quantity, unit price, amount)
+
+#### Example Output (Invoice)
+```json
+{
+  "invoice_number": "INV-12345",
+  "date": "2024-06-30",
+  "vendor": "Acme Corp",
+  "customer": "Beta LLC",
+  "total": 1250.00,
+  "line_items": [
+    {"description": "Widget A", "quantity": 10, "unit_price": 50, "amount": 500},
+    {"description": "Widget B", "quantity": 5, "unit_price": 150, "amount": 750}
   ]
 }
 ```
 
 ### Output Format
 
-The tool outputs a JSON array where each element contains the extracted information from a single CV. The output follows this schema:
-
-```json
-{
-  "name": "string",
-  "location": {
-    "city": "string",
-    "country": "string",
-    "region": "string"
-  },
-  "email": "string",
-  "phone": "string",
-  "linkedin": "string",
-  "experience_years": 0,
-  "current_position": "string",
-  "current_company": "string",
-  "education": [
-    {
-      "degree": "string",
-      "institution": "string",
-      "year": "string",
-      "field": "string"
-    }
-  ],
-  "skills": ["string"],
-  "languages": [
-    {
-      "language": "string",
-      "proficiency": "string"
-    }
-  ],
-  "certifications": ["string"],
-  "source_file": "string"
-}
-```
+The tool outputs a JSON array where each element contains the extracted information from a single document. The output format is entirely determined by the selected schema.
 
 ## Extending the Schema
 
-The schema is defined using [Pydantic](https://docs.pydantic.dev/) models in `cv_extractor.py`. To add or modify fields, simply update the models and adjust the system prompt as needed.
+Schemas are defined using [Pydantic](https://docs.pydantic.dev/) models in the `preprocess/schemas/` directory. To add or modify fields, simply update or create a schema file and implement the `get_schema()` function. The extraction logic will automatically use the selected schema for all processing.
 
 ## Requirements
 
