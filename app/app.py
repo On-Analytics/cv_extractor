@@ -156,13 +156,8 @@ def main():
         )
         if api_key:
             st.session_state["openai_api_key"] = api_key
-            # Pass user-supplied key to validation
-            if not validate_api_key(api_key):
-                st.warning("⚠️ API key missing or invalid format")
-                st.stop()
         else:
             st.warning("Please enter your OpenAI API key to use the app.")
-            st.stop()
         
 
 

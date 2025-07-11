@@ -30,24 +30,27 @@ def load_available_schemas() -> List[str]:
     
     return schemas
 
-def validate_api_key(api_key: str) -> bool:
+def validate_api_key() -> bool:
     """
     Validate that the OpenAI API key is present and properly formatted.
-    Args:
-        api_key (str): The API key to validate.
+    
     Returns:
         bool: True if API key appears valid, False otherwise
     """
+    api_key = os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
         return False
+    
     # Basic validation - OpenAI API keys typically start with 'sk-'
     if not api_key.startswith('sk-'):
         st.warning("API key should start with 'sk-'. Please verify your OpenAI API key.")
         return False
+    
     # Check minimum length (OpenAI keys are typically longer)
     if len(api_key) < 20:
         st.warning("API key appears to be too short. Please verify your OpenAI API key.")
         return False
+    
     return True
 
 def process_uploaded_file(
