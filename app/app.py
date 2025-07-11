@@ -159,24 +159,6 @@ def main():
         else:
             st.warning("Please enter your OpenAI API key to use the app.")
         
-
-
-        # API Connection Test
-        st.subheader("API Status")
-        if st.button("Test API Connection"):
-            with st.spinner("Testing API connection..."):
-                success, message = test_api_connection()
-                if success:
-                    st.success(message)
-                else:
-                    st.error(message)
-        
-        # Show current API key status
-        if validate_api_key():
-            st.success("✅ API key format looks valid")
-        else:
-            st.warning("⚠️ API key missing or invalid format")
-    
     # Main content area
     col1, col2 = st.columns([1, 1])
     
