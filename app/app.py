@@ -156,6 +156,8 @@ def main():
         )
         if api_key:
             st.session_state["openai_api_key"] = api_key
+            # Set the API key in environment variables for OpenAI client to use
+            os.environ["OPENAI_API_KEY"] = api_key
         else:
             st.warning("Please enter your OpenAI API key to use the app.")
         
