@@ -105,6 +105,58 @@ def test_api_connection():
         else:
             return False, f"Connection test failed: {error_msg}"
 
+def verify_api_key(api_key: str) -> tuple[bool, str]:
+    """Verify if the provided API key is valid."""
+    if not api_key or not api_key.startswith('sk-'):
+        return False, "Please enter a valid OpenAI API key (starts with 'sk-')"
+    
+    try:
+        client = OpenAI(api_key=api_key)
+        try:
+            # Test the API key by making a simple request
+            client.models.list()
+            
+            # Log successful verification (without storing the actual API key)
+            hashed_key = hash_api_key(api_key)
+            log_usage(hashed_key, "api_verification", "success")
+            
+            return True, "API key is valid"
+            
+        except openai.AuthenticationError as e:
+            error_msg = str(e).lower()
+            
+            # Log failed verification attempt
+            hashed_key = hash_api_key(api_key)
+            log_usage(hashed_key, "api_verification", "failed", error_msg)
+            
+            if "invalid api key" in error_msg:
+                return False, "Invalid API key"
+            elif "rate limit" in error_msg:
+                return False, "Rate limit exceeded for this API key"
+            elif "insufficient_quota" in error_msg:
+                return False, "API key has insufficient quota"
+            elif "billing" in error_msg or "payment" in error_msg:
+                return False, "Billing issue with this API key"
+            else:
+                return False, f"API error: {error_msg}"
+                
+        except ImportError:
+            return False, "OpenAI library not installed"
+            
+    except Exception as e:
+        error_msg = str(e)
+        if "event loop" in error_msg.lower() or "asyncio" in error_msg.lower():
+            return False, f"Async execution error: {error_msg} - Try restarting the app"
+        else:
+            # Log the error
+            hashed_key = hash_api_key(api_key) if 'api_key' in locals() else "unknown"
+            log_usage(hashed_key, "api_verification", "error", error_msg)
+            return False, f"Connection test failed: {error_msg}"
+
+# Initialize database and create tables if they don't exist
+from db_utils import init_db, hash_api_key, log_usage
+init_db()
+
 def main():
     # App title and description
     st.title("📄 Document Data Extractor")
@@ -129,9 +181,9 @@ def main():
         }
         # Only show 'cv_schema' and 'invoice_schema' for now
         allowed_schemas = [s for s in available_schemas if s in ("cv_schema", "invoice_schema")]
-        display_schema_names = ["Select a schema..."] + [SCHEMA_DISPLAY_NAMES.get(s, s) for s in allowed_schemas]
+        display_schema_names = ["Select a document"] + [SCHEMA_DISPLAY_NAMES.get(s, s) for s in allowed_schemas]
         selected_display_schema = st.selectbox(
-            "Select extraction schema",
+            "Select type of document",
             display_schema_names,
             index=0
         )
@@ -221,9 +273,16 @@ def main():
                                         result = future.result()
                                         if result:
                                             results.append(result)
+                                            # Log successful extraction
+                                            hashed_key = hash_api_key(os.environ.get("OPENAI_API_KEY", ""))
+                                            log_usage(hashed_key, selected_schema, "success")
                                     except Exception as e:
-                                        st.error(f"Error processing {uploaded_file.name}: {e}")
+                                        error_msg = str(e)
+                                        st.error(f"Error processing {uploaded_file.name}: {error_msg}")
                                         errors.append(uploaded_file.name)
+                                        # Log failed extraction
+                                        hashed_key = hash_api_key(os.environ.get("OPENAI_API_KEY", ""))
+                                        log_usage(hashed_key, selected_schema, "failed", error_msg)
                                     completed += 1
                                     progress_bar.progress(completed / len(uploaded_files))
                             st.success(f"Successfully processed {len(results)} out of {len(uploaded_files)} document(s)")
